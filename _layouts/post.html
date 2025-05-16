@@ -1,0 +1,25 @@
+---
+layout: default
+---
+
+<small>{{ page.date | date: "%-d %B %Y" }}</small>
+<h1>{{ page.title }}</h1>
+
+<p class="view">
+  {% if page.categories %}
+  <small>Categories: <em>{{ page.categories | join: "</em> - <em>" }}</em></small>
+  {% endif %}
+</p>
+
+{{content}}
+
+<hr>
+
+<div class="post-navigation">
+  {% if page.previous.url %}
+    <a class="prev" href="{{page.previous.url}}">&laquo; {{page.previous.title}}</a>
+  {% endif %}
+  {% if page.next.url %}
+    <a class="next" href="{{page.next.url}}">{{page.next.title}} &raquo;</a>
+  {% endif %}
+</div>
