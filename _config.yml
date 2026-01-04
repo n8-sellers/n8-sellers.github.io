@@ -1,9 +1,0 @@
-title: "NetLog"
-description: "Exploring network engineering"
-remote_theme: pages-themes/minimal@v0.2.0
-plugins:
-- jekyll-remote-theme
-show_downloads: false
-github:
-  is_project_page: true
-  repository_url: https://github.com/n8-sellers/n8-sellers.github.io
