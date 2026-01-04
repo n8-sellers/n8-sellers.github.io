@@ -11,8 +11,12 @@ import { Loader2, PlayCircle, CheckCircle, XCircle } from "lucide-react";
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [loadingDaily, setLoadingDaily] = useState(false);
+  const [loadingWeekly, setLoadingWeekly] = useState(false);
+  const [loadingMonthly, setLoadingMonthly] = useState(false);
+  const [resultDaily, setResultDaily] = useState<any>(null);
+  const [resultWeekly, setResultWeekly] = useState<any>(null);
+  const [resultMonthly, setResultMonthly] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleAuth = (e: React.FormEvent) => {
@@ -22,9 +26,9 @@ export default function AdminPage() {
   };
 
   const triggerDailyFetch = async () => {
-    setLoading(true);
+    setLoadingDaily(true);
     setError(null);
-    setResult(null);
+    setResultDaily(null);
 
     try {
       const response = await fetch("/api/admin/trigger", {
@@ -42,11 +46,65 @@ export default function AdminPage() {
         throw new Error(data.error || "Failed to trigger job");
       }
 
-      setResult(data);
+      setResultDaily(data);
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setLoadingDaily(false);
+    }
+  };
+
+  const triggerWeeklyDigest = async () => {
+    setLoadingWeekly(true);
+    setError(null);
+    setResultWeekly(null);
+
+    try {
+      const response = await fetch("/api/cron/weekly-digest", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${password}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate weekly digest");
+      }
+
+      setResultWeekly(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoadingWeekly(false);
+    }
+  };
+
+  const triggerMonthlyDigest = async () => {
+    setLoadingMonthly(true);
+    setError(null);
+    setResultMonthly(null);
+
+    try {
+      const response = await fetch("/api/cron/monthly-digest", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${password}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate monthly digest");
+      }
+
+      setResultMonthly(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoadingMonthly(false);
     }
   };
 
@@ -97,7 +155,7 @@ export default function AdminPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Manual Job Trigger */}
+          {/* Manual Data Fetch */}
           <Card>
             <CardHeader>
               <CardTitle>Manual Data Fetch</CardTitle>
@@ -111,10 +169,10 @@ export default function AdminPage() {
 
               <Button
                 onClick={triggerDailyFetch}
-                disabled={loading}
+                disabled={loadingDaily}
                 className="w-full"
               >
-                {loading ? (
+                {loadingDaily ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Fetching...
@@ -127,31 +185,24 @@ export default function AdminPage() {
                 )}
               </Button>
 
-              {error && (
-                <Alert variant="destructive">
-                  <XCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {result && (
+              {resultDaily && (
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
                     <div className="space-y-2">
                       <p className="font-medium">Fetch completed successfully!</p>
                       <ul className="text-sm space-y-1">
-                        <li>Candidates found: {result.candidatesFound}</li>
-                        <li>Entries added: {result.entriesAdded}</li>
-                        <li>Duplicates skipped: {result.duplicatesSkipped}</li>
+                        <li>Candidates found: {resultDaily.candidatesFound}</li>
+                        <li>Entries added: {resultDaily.entriesAdded}</li>
+                        <li>Duplicates skipped: {resultDaily.duplicatesSkipped}</li>
                         <li>
-                          Duration: {(result.duration / 1000).toFixed(2)}s
+                          Duration: {(resultDaily.duration / 1000).toFixed(2)}s
                         </li>
                       </ul>
-                      {result.errors && result.errors.length > 0 && (
+                      {resultDaily.errors && resultDaily.errors.length > 0 && (
                         <div className="mt-2">
                           <p className="text-sm font-medium text-destructive">
-                            Errors: {result.errors.length}
+                            Errors: {resultDaily.errors.length}
                           </p>
                         </div>
                       )}
@@ -162,7 +213,121 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* Information */}
+          {/* Weekly Digest */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekly Digest</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Generate a weekly digest summarizing research from the past 7
+                days. Normally runs automatically every Sunday at 8 PM.
+              </p>
+
+              <Button
+                onClick={triggerWeeklyDigest}
+                disabled={loadingWeekly}
+                className="w-full"
+                variant="secondary"
+              >
+                {loadingWeekly ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle className="w-4 h-4 mr-2" />
+                    Generate Weekly Digest
+                  </>
+                )}
+              </Button>
+
+              {resultWeekly && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="font-medium">
+                        Weekly digest generated successfully!
+                      </p>
+                      <ul className="text-sm space-y-1">
+                        <li>
+                          Entries processed: {resultWeekly.entriesProcessed}
+                        </li>
+                        <li>
+                          Period: {resultWeekly.periodStart} to{" "}
+                          {resultWeekly.periodEnd}
+                        </li>
+                        <li>
+                          Duration: {(resultWeekly.duration / 1000).toFixed(2)}s
+                        </li>
+                      </ul>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Monthly Digest */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Digest</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Generate a monthly digest with comprehensive statistics and
+                analysis. Normally runs automatically on the 1st of each month.
+              </p>
+
+              <Button
+                onClick={triggerMonthlyDigest}
+                disabled={loadingMonthly}
+                className="w-full"
+                variant="secondary"
+              >
+                {loadingMonthly ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle className="w-4 h-4 mr-2" />
+                    Generate Monthly Digest
+                  </>
+                )}
+              </Button>
+
+              {resultMonthly && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="font-medium">
+                        Monthly digest generated successfully!
+                      </p>
+                      <ul className="text-sm space-y-1">
+                        <li>
+                          Entries processed: {resultMonthly.entriesProcessed}
+                        </li>
+                        <li>
+                          Period: {resultMonthly.periodStart} to{" "}
+                          {resultMonthly.periodEnd}
+                        </li>
+                        <li>
+                          Duration: {(resultMonthly.duration / 1000).toFixed(2)}s
+                        </li>
+                      </ul>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* System Information */}
           <Card>
             <CardHeader>
               <CardTitle>System Information</CardTitle>
@@ -178,13 +343,15 @@ export default function AdminPage() {
 
               <div>
                 <h3 className="text-sm font-medium mb-2">
-                  Automated Jobs (Future)
+                  Automated Jobs (Vercel Cron)
                 </h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Daily fetch: Not yet configured</li>
-                  <li>• Weekly digest: Not yet configured</li>
-                  <li>• Monthly recap: Not yet configured</li>
+                  <li>• Weekly digest: Every Sunday at 8 PM</li>
+                  <li>• Monthly digest: 1st of each month at midnight</li>
                 </ul>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Note: Daily fetch not yet automated
+                </p>
               </div>
 
               <div>
@@ -207,6 +374,16 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Global Error Display */}
+        {error && (
+          <div className="mt-6">
+            <Alert variant="destructive">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
       </div>
     </div>
   );
